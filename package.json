@@ -2,6 +2,6 @@
   "name": "kapampangan-chatbot",
   "version": "1.0.0",
   "scripts": {
-    "dev": "python -m streamlit run app.py"
+    "dev": "streamlit run app.py"
   }
 }
