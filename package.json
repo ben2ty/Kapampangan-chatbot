@@ -4,7 +4,7 @@
   "description": "A Kapampangan language assistant web app",
   "scripts": {
     "start": "npx serve .",
-    "dev": "npx serve ."
+    "dev": "npx serve"
   },
   "dependencies": {
     "serve": "^14.2.1"
