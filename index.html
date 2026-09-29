@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kapampangan Chat Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .chat-container { height: calc(100vh - 180px); }
+        .message-bubble { max-width: 85%; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .typing-indicator::after { content: '...'; animation: typing 1.5s infinite; }
+        @keyframes typing { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+        .user-msg { align-self: flex-end; background-color: #2563eb; color: white; border-radius: 1.5rem 1.5rem 0 1.5rem; }
+        .bot-msg { align-self: flex-start; background-color: white; color: #1e293b; border-radius: 1.5rem 1mul 1.5rem 1.5rem; border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 py-4 px-6 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 text-white p-2 rounded-lg">
+                <i class="fas fa-language text-xl"></i>
+            </div>
+            <h1 class="font-semibold text-lg tracking-tight">Kapampangan Assistant</h1>
+        </div>
+        <button id="settingsBtn" class="text-slate-500 hover:text-slate-800 transition-colors">
+            <i class="fas fa-cog text-xl"></i>
+        </button>
+    </header>
+
+    <!-- Settings Overlay -->
+    <div id="settingsOverlay" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h2 class="text-xl font-semibold mb-4">API Configuration</h2>
+            <p class="text-sm text-slate-500 mb-6">Enter your API keys to enable AI and Voice features.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Gemini API Key</label>
+                    <input type="password" id="geminiKey" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="AIKEY...">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">ElevenLabs API Key</label>
+                    <input type="password" id="elevenlabsKey" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="ELEVEN_KEY...">
+                </div>
+            </div>
+
+            <div class="mt-8 flex gap-3">
+                <button id="saveSettings" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">Save</button>
+                <button id="closeSettings" class="flex-1 bg-slate-100 text-slate-700 py-2 rounded-lg font-medium hover:bg-slate-200 transition-colors">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chat Area -->
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        <div id="chatMessages" class="chat-container overflow-y-auto custom-scrollbar flex flex-col gap-4 pb-4">
+            <!-- Welcome Message -->
+            <div class="bot-msg p-4 shadow-sm">
+                <p class="text-sm leading-lagged">Malaus ko! (Welcome!) I am your Kapampangan language assistant. How can I help you today?</p>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="mt-4 sticky bottom-0 bg-slate-50 pt-2">
+            <div class="flex items-end gap-2 bg-white rounded-2xl border border-slate-200 p-2 shadow-lg">
+                <textarea id="userInput" rows="1" class="flex-1 max-h-32 p-3 bg-transparent border-none focus:ring-0 resize-none text-slate-800 placeholder:text-slate-400" placeholder="Ask anything..."></textarea>
+                <button id="sendBtn" class="bg-blue-600 text-white w-12 h-12 rounded-xl flex items-center justify-center hover:bg-blue-700 transition-all disabled:opacity-50">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+            <p class="text-[10px] text-center text-slate-400 mt-2 uppercase tracking-widest">Powered by Gemini AI</p>
+        </div>
+    </main>
+
+    <script>
+        // Voice Script Context
+        const KAPAMPANGAN_CONTEXT = `
+        Use the following linguistic reference for Kapampangan translations and context. 
+        If the user asks for translation or Kapampangan phrases, refer to these:
+        
+        "Welcome to our house. Today, we are going to have a happy family gathering. I bought a fresh apple and some sweet oranges from the market this morning, ne? Please make yourself comfortable in the corner over there. Don't worry about the hospital call—everything is perfectly fine ngeni. I just need to check the filing cabinet for an important document. It will only take an hour, sige?
+        Look at that beautiful view from the window. It is a very different experience compared to the city. I am so glad you could make it, ale? Let us sit down and eat together. You know, I am so glad you could make it, ale? Let us sit down and eat together. You know, I always tell people that the food here is the best. We take pride in what we cook. If you want more sugar in your coffee, just tell me. I have a whole pack of it in the kitchen pala.
+        Let us talk about our plans for tomorrow. I was thinking we could visit the old hotel downtown. It has a lot of history, and the architecture is amazing. The staff there are very helpful and honest, which makes the experience even better. We can take a jeepney or a tricycle, depending on what is available when we leave.
+        After that, we can drop by the local bakery. They make the most delicious bread every afternoon. It is always served hot, straight from the oven. I am sure you will love it. If you are too full, we can just take some home for a midnight snack. There is no need to rush, we have all the time in the world today.
+        Before it gets dark, I want to show you the fields nearby. The sunset looks incredible from there, especially at this time of the year. It gives you a sense of peace that you cannot find anywhere else. Just make sure to bring a jacket, because it can get a little bit chilly later in the evening, ne?
+        Thank you for taking the time to come over and visit us. It means a lot to the whole family. We don't get many guests around here anymore, so this is a very special occasion for everyone. Let us make the most of it, enjoy the food, and have a wonderful conversation together.
+        
+        Key phrases:
+        - Juan ya ing lagyu ku (My name is Juan)
+        - Atyu ku keni (I am here)
+        - Mayap a yabak pu (Good morning)
+        - Mayap a gatpanapun pu (Good afternoon)
+        - Mayap a bengi pu (Good evening)"
+        `;
+
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsOverlay = document.getElementById('settingsOverlay');
+        const closeSettings = document.getElementById('closeSettings');
+        const saveSettings = document.getElementById('saveSettings');
+        const geminiKeyInput = document.getElementById('geminiKey');
+        const elevenlabsKeyInput = document.getElementById('elevenlabsKey');
+
+        let chatHistory = [];
+
+        // Initialize keys from localStorage
+        if (localStorage.getItem('geminiKey')) geminiKeyInput.value = localStorage.getItem('geminiKey');
+        if (localStorage.getItem('elevenlabsKey')) elevenlabsKeyInput.value = localStorage.getItem('elevenlabsKey');
+
+        // Settings Logic
+        settingsBtn.onclick = () => settingsOverlay.classList.remove('hidden');
+        closeSettings.onclick = () => settingsOverlay.classList.add('hidden');
+        saveSettings.onclick = () => {
+            localStorage.setItem('geminiKey', geminiKeyInput.value);
+            localStorage.setItem('elevenlabsKey', elevenlabsKeyInput.value);
+            settingsOverlay.classList.add('hidden');
+            alert('Settings saved!');
+        };
+
+        // Chat Logic
+        function appendMessage(role, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = role === 'user' ? 'user-msg p-4 shadow-sm' : 'bot-msg p-4 shadow-sm';
+            msgDiv.textContent = text;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function callGemini(prompt) {
+            const apiKey = localStorage.getItem('geminiKey');
+            if (!apiKey) return "Please set your Gemini API Key in settings to use this feature.";
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            
+            const systemInstruction = `You are a helpful Kapampangan language assistant. You help users learn Kapampangan, translate between English and Kapampangan, and answer questions. Use the following context for accuracy: ${KAPAMPANGAN_CONTEXT}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: chatHistory.concat([{ role: 'user', parts: [{ text: systemInstruction + "\\n\\nUser: " + prompt }] }])
+                    })
+                });
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error(error);
+                return "Error connecting to Gemini. Please check your API key and connection.";
+            }
+        }
+
+        async function handleSendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            userInput.value = '';
+            appendMessage('user', text);
+            chatHistory.push({ role: 'user', parts: [{ text: text }] });
+
+            // Show typing indicator
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'bot-msg p-4 shadow-sm typing-indicator';
+            typingDiv.textContent = '';
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const aiResponse = await callGemini(text);
+            
+            chatMessages.removeChild(typingDiv);
+            appendMessage('bot', aiResponse);
+            chatHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
+
+            // Auto-resize textarea
+            userInput.style.height = 'auto';
+        }
+
+        sendBtn.onclick = handleSendMessage;
+        userInput.onkeydown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+            }
+        };
+        userInput.oninput = () => {
+            userInput.style.height = 'auto';
+            userInput.style.height = userInput.scrollHeight + 'px';
+        };
+    </script>
+</body>
+</html>

@@ -1,7 +1,11 @@
 {
-  "name": "kapampangan-chatbot",
+  "name": "kapampangan-assistant",
   "version": "1.0.0",
+  "description": "A Kapampangan language assistant web app",
   "scripts": {
-    "dev": "streamlit run app.py"
+    "start": "npx serve ."
+  },
+  "dependencies": {
+    "serve": "^14.2.1"
   }
 }
